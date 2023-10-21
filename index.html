@@ -73,13 +73,13 @@
             container: 'map',
             style: 'std.json',
             // style: 'https://tile2.openstreetmap.jp/styles/osm-bright-ja/style.json',
-            zoom: 15.1,
+            zoom: 13.32,
             minZoom: 1,
             maxZoom: 23,
-            pitch: 60,
+            pitch: 72,
             maxPitch: 85,
-            bearing: 0,
-            center: [139.76738, 32.44942],
+            bearing: -8.1,
+            center: [138.73908, 35.3381],
             hash: true,
             attributionControl: false
         });
@@ -109,7 +109,7 @@
         // Attributionを折りたたみ表示
         map.addControl(new maplibregl.AttributionControl({
             compact: true,
-            customAttribution: '（<a href="https://twitter.com/shi__works" target="_blank">Twitter</a> | <a href="" target="_blank">Github</a>） '
+            customAttribution: '（<a href="https://twitter.com/shi__works" target="_blank">Twitter</a> | <a href="https://github.com/shi-works/gsi-terrain-dem-with-sekisyoku-on-maplibre-gl-js" target="_blank">Github</a>） '
         }));
 
         // 3D地形コントロール
