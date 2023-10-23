@@ -1,29 +1,56 @@
 <html>
 
 <head>
-    <title>地理院 標高タイル（DEM10B）+赤色立体地図（DEM10B）</title>
-    <meta charset="utf-8" />
+    <title>地理院 標高タイル（Terrain-RGB）の比較マップ</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src='https://unpkg.com/maplibre-gl@3.1.0/dist/maplibre-gl.js'></script>
     <link href='https://unpkg.com/maplibre-gl@3.1.0/dist/maplibre-gl.css' rel='stylesheet' />
     <script src="https://unpkg.com/pmtiles@2.10.0/dist/index.js"></script>
-    <script type="module" src="maplibre-gl-gsi-terrain-fast-png.js"></script>
+    <link href="maplibre-gl-compare.css" rel='stylesheet' />
+    <script src="maplibre-gl-compare.js"></script>
     <style>
         body {
             margin: 0;
+            padding: 0;
         }
 
         #map {
-            height: 100%;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <style>
+        body {
+            overflow: hidden;
+        }
+
+        body * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
             width: 100%;
         }
 
         .map-overlay {
             font: bold 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
             position: absolute;
-            width: 190px;
+            width: 180px;
             bottom: 20px;
-            left: 0;
+            left: 40px;
             padding: 10px;
         }
 
@@ -53,279 +80,242 @@
             margin: 0;
             cursor: ew-resize;
         }
-    </style>
-</head>
 
-<body>
-    <div id="map"></div>
+        .corner-text {
+            position: fixed;
+            top: 0;
+            padding: 10px;
+            font-size: 14px;
+            z-index: 1;
+            /* put text above other elements */
+            color: white;
+            /* make sure text is visible on top of other elements */
+            background-color: rgba(0, 0, 0, 0.5);
+            /* semi-transparent background for better visibility */
+        }
+
+        #left-corner {
+            left: 0;
+        }
+
+        #right-corner {
+            right: 0;
+        }
+    </style>
+    <div id="comparison-container">
+        <div id="left-corner" class="corner-text">標高タイル（et10b/et256）</div>
+        <div id="right-corner" class="corner-text">標高タイル（et10b/et512）</div>
+        <div id="before" class="map"></div>
+        <div id="after" class="map"></div>
+    </div>
     <div class="map-overlay top">
         <div class="map-overlay-inner">
-            <label>赤色立体地図 不透明度: <span id="red-relief-slider-opacity-value">100%</span></label>
-            <input id="red-relief-slider-opacity" type="range" min="0" max="100" step="1" value="100">
+            <label>陰影起伏図 不透明度: <span id="hillshade-slider-opacity-value">50%</span></label>
+            <input id="hillshade-slider-opacity" type="range" min="0" max="100" step="1" value="50">
         </div>
     </div>
-    <script type="text/javascript">
+    <script>
         // protocolの設定
         let protocol = new pmtiles.Protocol();
         maplibregl.addProtocol("pmtiles", protocol.tile);
 
-        const map = new maplibregl.Map({
-            container: 'map',
+        // マップを初期化
+        const beforeMap = new maplibregl.Map({
+            container: 'before',
             style: 'std.json',
-            // style: 'https://tile2.openstreetmap.jp/styles/osm-bright-ja/style.json',
-            zoom: 13.32,
-            minZoom: 1,
-            maxZoom: 23,
-            pitch: 72,
+            zoom: 12.5,
+            center: [139.02065, 35.22254],
+            pitch: 66,
+            bearing: 24.8,
             maxPitch: 85,
-            bearing: -8.1,
-            center: [138.73908, 35.3381],
+            attributionControl: false,
             hash: true,
-            attributionControl: false
         });
 
-        // ズーム・回転
-        map.addControl(new maplibregl.NavigationControl());
+        // マップをロード
+        beforeMap.on('load', () => {
+            // 標高タイル（et10b-et256）ソース
+            beforeMap.addSource("gsi-dem-et10b-et256", {
+                type: 'raster-dem',
+                tiles: [
+                    'https://x.optgeo.org/et10b/et256/{z}/{x}/{y}.webp',
+                ],
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#dem" target="_blank">地理院タイル(標高タイル)</a>',
+                tileSize: 256
+            });
 
+            // 標高タイルセット
+            beforeMap.setTerrain({ 'source': 'gsi-dem-et10b-et256', 'exaggeration': 1 });
+
+            // 陰影起伏図ソース
+            beforeMap.addSource("hillshade", {
+                type: 'raster',
+                tiles: [
+                    'https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png',
+                ],
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#hillshademap" target="_blank">地理院タイル(陰影起伏図)</a>',
+                tileSize: 256
+            });
+
+            // 陰影起伏図レイヤ
+            beforeMap.addLayer({
+                id: 'hillshade-tiles',
+                type: 'raster',
+                source: 'hillshade',
+                minzoom: 2,
+                maxzoom: 18,
+                paint: {
+                    'raster-opacity': 0.5
+                }
+            });
+
+        });
+
+        // スケール表示
+        beforeMap.addControl(new maplibregl.ScaleControl({
+            maxWidth: 200,
+            unit: 'metric'
+        }));
+
+        /*
         // フルスクリーンモードのオンオフ
-        map.addControl(new maplibregl.FullscreenControl());
+        beforeMap.addControl(new maplibregl.FullscreenControl(), 'bottom-left');
+        */
+
+        // 3D地形コントロール
+        beforeMap.addControl(
+            new maplibregl.TerrainControl({
+                source: 'gsi-dem-10b256',
+                exaggeration: 1 // 標高を強調する倍率
+            }), 'bottom-left'
+        );
 
         // 現在位置表示
-        map.addControl(new maplibregl.GeolocateControl({
+        beforeMap.addControl(new maplibregl.GeolocateControl({
             positionOptions: {
                 enableHighAccuracy: false
             },
             fitBoundsOptions: { maxZoom: 18 },
             trackUserLocation: true,
             showUserLocation: true
-        }));
+        }), 'bottom-left');
 
-        // スケール表示
-        map.addControl(new maplibregl.ScaleControl({
-            maxWidth: 200,
-            unit: 'metric'
-        }));
+        // ズーム・回転
+        beforeMap.addControl(new maplibregl.NavigationControl(), 'bottom-left');
 
         // Attributionを折りたたみ表示
-        map.addControl(new maplibregl.AttributionControl({
+        beforeMap.addControl(new maplibregl.AttributionControl({
             compact: true,
-            customAttribution: '（<a href="https://twitter.com/shi__works" target="_blank">Twitter</a> | <a href="https://github.com/shi-works/gsi-terrain-dem-with-sekisyoku-on-maplibre-gl-js" target="_blank">Github</a>） '
+            customAttribution: '<a href="https://twitter.com/shi__works" target="_blank">Twitter</a> | <a href="https://github.com/shi-works/gsi-terrain-dem-terrain-rgb-comparison-map" target="_blank">Github</a>'
         }));
 
-        // 3D地形コントロール
-        map.addControl(
-            new maplibregl.TerrainControl({
-                source: 'gsi-dem',
-                exaggeration: 1 // 標高を強調する倍率
-            })
-        );
+        // マップを初期化
+        const afterMap = new maplibregl.Map({
+            container: 'after',
+            style: 'std.json',
+            zoom: 12.5,
+            center: [139.02065, 35.22254],
+            pitch: 66,
+            bearing: 24.8,
+            maxPitch: 85,
+            attributionControl: false,
+            hash: true,
+        });
 
-        map.on('load', () => {
-            // 地理院 標高タイルDEM
-            map.addSource("gsi-dem", {
+        // マップをロード
+        afterMap.on('load', () => {
+            // 標高タイル（et10b-et512）ソース
+            afterMap.addSource("gsi-dem-et10b-et512", {
                 type: 'raster-dem',
                 tiles: [
-                    'gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
+                    // 'https://x.optgeo.org/et10b/et512/{z}/{x}/{y}.webp',
+                    'https://smb.optgeo.org/ipfs/QmWGYxRhixi4itNhy1YWtYX9sBcYxuykwENNxDsWMfqNgh/{z}/{x}/{y}.webp'
                 ],
-                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#dem" target="_blank">地理院タイル（標高タイル）</a>',
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#dem" target="_blank">地理院タイル(標高タイル)</a>',
+                tileSize: 512
+            });
+
+            // 標高タイルセット
+            afterMap.setTerrain({ 'source': 'gsi-dem-et10b-et512', 'exaggeration': 1 });
+
+            // 陰影起伏図ソース
+            afterMap.addSource("hillshade", {
+                type: 'raster',
+                tiles: [
+                    'https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png',
+                ],
+                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#hillshademap" target="_blank">地理院タイル(陰影起伏図)</a>',
                 tileSize: 256
             });
 
-            map.setTerrain({ 'source': 'gsi-dem', 'exaggeration': 1 });
-
-            // 赤色立体地図（DEM10B）ソース
-            map.addSource("sekisyoku", {
+            // 陰影起伏図レイヤ
+            afterMap.addLayer({
+                id: 'hillshade-tiles',
                 type: 'raster',
-                tiles: [
-                    'https://cyberjapandata.gsi.go.jp/xyz/sekishoku/{z}/{x}/{y}.png',
-                ],
-                attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#sekishoku" target="_blank">地理院タイル（赤色立体地図）</a>',
-                tileSize: 256
+                source: 'hillshade',
+                minzoom: 2,
+                maxzoom: 18,
+                paint: {
+                    'raster-opacity': 0.5
+                }
             });
-
-            // 赤色立体地図（DEM10B）レイヤ
-            map.addLayer({
-                id: 'sekisyoku-tiles',
-                type: 'raster',
-                source: 'sekisyoku',
-                minzoom: 1,
-                maxzoom: 23
-            });
-
-            // 地理院ベクトルタイル 自然地名ソース
-            map.addSource("gsi-shizen", {
-                type: 'vector',
-                tiles: [
-                    "https://optgeo.github.io/shizen/zxy/{z}/{x}/{y}.pbf"
-                ],
-                attribution: '<a href="https://github.com/gsi-cyberjapan/experimental_pni/" target="_blank">国土地理院ベクトルタイル提供実験（自然地名）</a>',
-            });
-
-            // 地理院ベクトルタイル 自然地名レイヤ
-            map.addLayer({
-                "id": "NNFPt",
-                "layout": {
-                    "text-field": [
-                        "step",
-                        [
-                            "zoom"
-                        ],
-                        [
-                            "get",
-                            "name"
-                        ],
-                        14,
-                        [
-                            "concat",
-                            [
-                                "get",
-                                "name"
-                            ],
-                            "（",
-                            [
-                                "get",
-                                "type"
-                            ],
-                            "）"
-                        ],
-                        15,
-                        [
-                            "concat",
-                            [
-                                "get",
-                                "name"
-                            ],
-                            "（",
-                            [
-                                "get",
-                                "kana"
-                            ],
-                            "：",
-                            [
-                                "get",
-                                "type"
-                            ],
-                            "）"
-                        ],
-                        16,
-                        [
-                            "concat",
-                            [
-                                "get",
-                                "name"
-                            ],
-                            "（",
-                            [
-                                "get",
-                                "kana"
-                            ],
-                            "／",
-                            [
-                                "get",
-                                "rj"
-                            ],
-                            "：",
-                            [
-                                "get",
-                                "type"
-                            ],
-                            "）"
-                        ]
-                    ],
-                    "text-size": [
-                        "interpolate",
-                        [
-                            "linear"
-                        ],
-                        [
-                            "zoom"
-                        ],
-                        11,
-                        7,
-                        14,
-                        20
-                    ]
-                },
-                "paint": {
-                    "text-color": [
-                        "match",
-                        [
-                            "get",
-                            "type"
-                        ],
-                        [
-                            "河川",
-                            "湖沼",
-                            "滝",
-                            "海岸・浜・磯",
-                            "湾・灘",
-                            "海峡・水道"
-                        ],
-                        [
-                            "rgb",
-                            45,
-                            91,
-                            246
-                        ],
-                        [
-                            "山"
-                        ],
-                        [
-                            "rgb",
-                            146,
-                            114,
-                            39
-                        ],
-                        [
-                            "rgb",
-                            0,
-                            0,
-                            0
-                        ]
-                    ],
-                    "text-halo-color": [
-                        "match",
-                        [
-                            "get",
-                            "gaijiFlg"
-                        ],
-                        1,
-                        [
-                            "rgb",
-                            255,
-                            255,
-                            0
-                        ],
-                        [
-                            "rgb",
-                            255,
-                            255,
-                            255
-                        ]
-                    ],
-                    "text-halo-width": 2
-                },
-                "source": "gsi-shizen",
-                "source-layer": "NNFPt",
-                "type": "symbol"
-            });
-
-            // 赤色立体地図の不透明度をスライダーで制御
-            const red_relief_sliderOpactiy = document.getElementById('red-relief-slider-opacity');
-            const red_relief_sliderOpactiyValue = document.getElementById('red-relief-slider-opacity-value');
-
-            red_relief_sliderOpactiy.addEventListener('input', (e) => {
-                map.setPaintProperty(
-                    'sekisyoku-tiles',
-                    'raster-opacity',
-                    parseInt(e.target.value, 10) / 100
-                );
-                red_relief_sliderOpactiyValue.textContent = e.target.value + '%';
-            });
-
-            map.showTileBoundaries = false;
 
         });
+
+        // Attributionを折りたたみ表示
+        afterMap.addControl(new maplibregl.AttributionControl({
+            compact: true,
+            customAttribution: '<a href="https://twitter.com/shi__works" target="_blank">Twitter</a> | <a href="https://github.com/shi-works/gsi-terrain-dem-terrain-rgb-comparison-map" target="_blank">Github</a>'
+        }));
+
+        /*
+        // フルスクリーンモードのオンオフ
+        afterMap.addControl(new maplibregl.FullscreenControl(), 'bottom-right');
+        */
+
+        // 3D地形コントロール
+        afterMap.addControl(
+            new maplibregl.TerrainControl({
+                source: 'gsi-dem-10b512-7-113-50',
+                exaggeration: 1 // 標高を強調する倍率
+            }), 'bottom-right'
+        );
+
+        // 現在位置表示
+        afterMap.addControl(new maplibregl.GeolocateControl({
+            positionOptions: {
+                enableHighAccuracy: false
+            },
+            fitBoundsOptions: { maxZoom: 18 },
+            trackUserLocation: true,
+            showUserLocation: true
+        }), 'bottom-right');
+
+        // ズーム・回転
+        afterMap.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+        var container = "#comparison-container";
+        var map = new maplibregl.Compare(beforeMap, afterMap, container, {
+        });
+
+        // スライダーで陰影起伏図の不透明度を制御
+        const hillshadesliderOpactiy = document.getElementById('hillshade-slider-opacity');
+        const hillshadesliderOpactiyValue = document.getElementById('hillshade-slider-opacity-value');
+
+        hillshadesliderOpactiy.addEventListener('input', (e) => {
+            beforeMap.setPaintProperty(
+                'hillshade-tiles',
+                'raster-opacity',
+                parseInt(e.target.value, 10) / 100
+            );
+            afterMap.setPaintProperty(
+                'hillshade-tiles',
+                'raster-opacity',
+                parseInt(e.target.value, 10) / 100
+            );
+            hillshadesliderOpactiyValue.textContent = e.target.value + '%';
+        });
+
     </script>
 </body>
 
