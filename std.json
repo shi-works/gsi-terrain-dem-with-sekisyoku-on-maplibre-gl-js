@@ -12,6 +12,14 @@
 				"pmtiles://https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1/optimal_bvmap-v1.pmtiles/{z}/{x}/{y}"
 			],
 			"attribution": "<a href='https://github.com/gsi-cyberjapan/optimal_bvmap' target='_blank'>国土地理院最適化ベクトルタイル(標準地図風スタイル)</a>"
+		},
+		"s": {
+			"type": "raster",
+			"tiles": [
+				"https://cyberjapandata.gsi.go.jp/xyz/sekishoku/{z}/{x}/{y}.png"
+			],
+			"attribution": "<a href='https://maps.gsi.go.jp/development/ichiran.html#sekishoku' target='_blank'>地理院タイル（赤色立体地図）</a>",
+			"tileSize": 256
 		}
 	},
 	"layers": [
@@ -39,6 +47,14 @@
 			"source-layer": "AdmArea",
 			"paint": {
 				"fill-color": "rgba(255,255,255,1)"
+			}
+		},
+		{
+			"id": "sekisyoku",
+			"type": "raster",
+			"source": "s",
+			"paint": {
+				"raster-opacity": 1
 			}
 		},
 		{
