@@ -18,7 +18,7 @@
 			"tiles": [
 				"https://cyberjapandata.gsi.go.jp/xyz/sekishoku/{z}/{x}/{y}.png"
 			],
-			"attribution": "<a href='https://maps.gsi.go.jp/development/ichiran.html#sekishoku' target='_blank'>地理院タイル（赤色立体地図※赤色立体地図はアジア航測株式会社の特許（第3670274号等）を使用して作成したものです。）</a>",
+			"attribution": "<a href='https://maps.gsi.go.jp/development/ichiran.html#sekishoku' target='_blank'>地理院タイル（赤色立体地図）</a><a href='https://www.rrim.jp/researcher/' target='_blank'>※赤色立体地図はアジア航測株式会社の特許（第3670274号等）を使用して作成したものです。赤色立体地図を利用される場合はアジア航測株式会社の許諾条件を確認してご利用ください。</a>",
 			"tileSize": 256
 		}
 	},
